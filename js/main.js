@@ -8,25 +8,79 @@ var Mechanics = {
 	input: false,
 	reset: function(){
 		this.Background.reset();
+		this.mainBucle();
 		if(!this.started)
 		{
 			this.started = true;
 			var _self = this;
-			$('body').keypress(function(e) {
-				_self.inputKey(e.which);
+			$('body').keydown(function(e) {
+				_self.Input.keyDown(e.which);
+			});
+			$('body').keyup(function(e) {
+				_self.Input.keyUp(e.which);
 			});
 		}
 		else
 		{
 		}
 	},
+	mainBucle: function(){
+		FPS = 20;
+		var _self = this;
+		setInterval(function(){
+			_self.Input.update();
 
+
+		},1000/FPS);
+	},
+	Input: {
+		keys: [],
+		update: function(){
+			for(var i = 0, len = this.keys.length; i < len; i++){
+				console.log(this.keys[i]);
+				switch(this.keys[i]){
+					case 49://escape
+						break;
+					case 87://W
+						IA.player.addPosition(0,2);
+						break;
+					case 83://S
+						IA.player.addPosition(0,-2);
+						break;
+					case 65://A	
+						IA.player.addPosition(-2,0);			
+						break;
+					case 68://D
+						IA.player.addPosition(2,0);
+						break;
+					default:
+						break;
+				}
+			}
+		},
+		keyDown: function(char){
+			this.keys.push(char);
+		},
+		keyUp: function(char){
+			this.keys.splice(this.keys.indexOf(char));
+		}
+	},
 	Background: {
-		mode: true,
-		speed: 3000,
+		mode: false,
+		speed: 1500,
 		reset: function(){
+			var t_repeat = new Util.Trigger();
 			var _self = this;
-			setInterval(function(){
+
+			var internalCallback = function( t, counter )
+			{
+				setTimeout( internalCallback, _self.speed);
+				callback();
+			};
+
+			setTimeout( internalCallback, this.speed);
+
+			var callback = function(){
 				if(_self.mode == false){
 					_self.speed = Util.getRandom(3000, 5000);
 					$("body").css("-webkit-transition", "background-color 2s");
@@ -35,46 +89,19 @@ var Mechanics = {
 					$("body").css("background-color", "rgb("+Util.getRandom(0, 255)+","+Util.getRandom(0,255)+","+Util.getRandom(0, 255)+")");
 				}
 				else if(_self.mode == true){
-					_self.speed = Util.getRandom(400, 700);
+					_self.speed = Util.getRandom(250, 300);
 
-					$("body").css("-webkit-transition", "background-color 0.5s");
-					$("body").css("transition", "background-color 0.5s");
+					$("body").css("-webkit-transition", "background-color 0.25s");
+					$("body").css("transition", "background-color 0.25s");
 
 					$("body").css("background-color", "rgb("+Util.getRandom(0, 255)+","+Util.getRandom(0,255)+","+Util.getRandom(0, 255)+")");
 				}
-			}, this.speed);
-
+			}
 		},
 		epilepticMode: function(state){
 			this.mode = (state)?true:false;
 		},
 	},
-	inputKey: function(char){
-		//mejorar para eventos pressed
-		input = (char == 119 || char == 115 || char == 97 || char == 100);
-
-		switch(char){
-			case 49://escape
-				break;
-			case 119://W
-				IA.player.addPosition(0,5);
-				break;
-			case 115://S
-				IA.player.addPosition(0,-5);
-				break;
-			case 97://A	
-				IA.player.addPosition(-5,0);			
-				break;
-			case 100://D
-				IA.player.addPosition(5,0);
-				break;
-			default:
-				break;
-		}
-
-
-	},
-
 }
 
 var IA = {
@@ -83,7 +110,9 @@ var IA = {
 	reset: function(){
 		this.player = new this.Entity("player", 0, 0);
 		if(this.started)
-		{}
+		{
+
+		}
 		else
 		{}
 	},
@@ -110,12 +139,15 @@ var IA = {
 			$("."+this.name).css("left", this.x+"px");
 			$("."+this.name).css("bottom", this.y+"px");
 		}
+
+
+
 	},
 }
 
 var Multiplayer = {
 	started: false,
-	key: "",
+	key: "bYFjbygfYUGg", //default key
 	reset: function(){
 		if(!this.started)
 		{
@@ -140,7 +172,6 @@ var Multiplayer = {
 		socket.on("connect", function(){
 			console.log("Conectado.");
 			socket.emit("nick", prompt("Nick?"));
-
 		});
 		socket.on("getkey", function(key){
 			_self.key = key;
@@ -154,14 +185,19 @@ var Multiplayer = {
 	},
 
 	server: function(port){
+		//
+		
 	},
 
+	sendMsg: function(msg, socket){
+		socket.emit("msg", Util.encript(this.key, msg));
+	},
 	readMsg: function(msg){
 		
 	},
 	sendPacket: function(opCode, packetObject, socket){
-		socket.emit("packet", Util.encript(this.key, JSON.stringify(new Packet(opCode, packetObject)));
-	}
+		socket.emit("packet", Util.encript(this.key, JSON.stringify(new Packet(opCode, packetObject))));
+	},
 	readPacket: function(packet){
 		var packetObject = packet.pkg;
 
@@ -170,7 +206,9 @@ var Multiplayer = {
 
 				break;
 			case 1:
-				$(".entity."+pkg.id)
+				//Update player positions from packet(op: 1)
+				$(".entity."+ packetObject.id).css("left", packetObject.x+"px");
+				$(".entity."+ packetObject.id).css("bottom", packetObject.y+"px");
 			default:
 				break;
 		}
@@ -183,7 +221,7 @@ var Multiplayer = {
 
 	//Packets////////
 	//position:
-	PositionPacket: function(nick, x, y){
+	PositionPacket: function(id, x, y){
 		this.id = id;
 		this.x = x;
 		this.y = y;
@@ -231,6 +269,18 @@ var Util = {
 	decript: function(key, cypth)
 	{
 		return (CryptoJS.Rabbit.decrypt(cypth, key)).toString(CryptoJS.enc.Utf8);
+	},
+
+	Trigger: function(){
+		this.state = true;
+		this.get = function(){
+			var state = this.state;
+			this.state = false;
+			return state;
+		}
+		this.reset = function(){
+			this.state = true;
+		}
 	},
 }
 
