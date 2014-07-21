@@ -25,7 +25,7 @@ var Mechanics = {
 		}
 	},
 	mainBucle: function(){
-		FPS = 20;
+		var FPS = 60;
 		var _self = this;
 		setInterval(function(){
 			_self.Input.update();
@@ -37,21 +37,20 @@ var Mechanics = {
 		keys: [],
 		update: function(){
 			for(var i = 0, len = this.keys.length; i < len; i++){
-				console.log(this.keys[i]);
 				switch(this.keys[i]){
 					case 49://escape
 						break;
 					case 87://W
-						IA.player.addPosition(0,2);
+						IA.player.addPosition(0,3);
 						break;
 					case 83://S
-						IA.player.addPosition(0,-2);
+						IA.player.addPosition(0,-3);
 						break;
 					case 65://A	
-						IA.player.addPosition(-2,0);			
+						IA.player.addPosition(-3,0);			
 						break;
 					case 68://D
-						IA.player.addPosition(2,0);
+						IA.player.addPosition(3,0);
 						break;
 					default:
 						break;
@@ -59,7 +58,8 @@ var Mechanics = {
 			}
 		},
 		keyDown: function(char){
-			this.keys.push(char);
+			if(this.keys.indexOf(char) == -1)
+				this.keys.push(char);
 		},
 		keyUp: function(char){
 			this.keys.splice(this.keys.indexOf(char));
